@@ -7,8 +7,6 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 
-import { MemberService } from '@app/member/member.service';
-import { BookService } from '@app/book/book.service';
 import { BorrowedBook } from './borrowed-books.entity';
 import { CreateBorrow } from './dto/create-borrow.dto';
 import { Book } from '@app/book/book.entity';
@@ -20,8 +18,6 @@ export class BorrowedBooksService {
   constructor(
     @InjectRepository(BorrowedBook)
     private borrowedBooksRepository: Repository<BorrowedBook>,
-    private membersService: MemberService,
-    private booksService: BookService,
   ) {}
 
   async getAllBorrowedBooks(): Promise<BorrowedBook[]> {
@@ -38,25 +34,19 @@ export class BorrowedBooksService {
     try {
       const { memberId, bookId } = inputDto;
 
-      const member = await this.membersService.findMember(memberId);
-      if (!member) throw new NotFoundException('Member data not found.');
-
-      const book = await this.booksService.findBook(bookId);
-      if (!book) throw new NotFoundException('Book data not found.');
-
       // check if member already borrowed two books
-      if (await this.isLimitBookBorrowed(member))
+      if (await this.isLimitBookBorrowed(memberId))
         throw new ForbiddenException('Borrowed books is limited to two books');
 
       // check if book is already borrowed
-      if (await this.isBookBorrowed(book))
+      if (await this.isBookBorrowed(bookId))
         throw new ForbiddenException(
           'Book is already borrowed by other member',
         );
 
       const data = new BorrowedBook();
-      data.memberId = member.id;
-      data.bookId = book.id;
+      data.memberId = memberId;
+      data.bookId = bookId;
 
       return this.borrowedBooksRepository.save(data);
     } catch (error) {
@@ -68,16 +58,11 @@ export class BorrowedBooksService {
     try {
       const { memberId, bookId } = inputDto;
 
-      const member = await this.membersService.findMember(memberId);
-      if (!member) throw new NotFoundException('Member data not found.');
-
-      const book = await this.booksService.findBook(bookId);
-      if (!book) throw new NotFoundException('Book data not found.');
-
+      // check if book is borrowed and not yet returned
       const borrowedBook = await this.borrowedBooksRepository.findOne({
         where: {
-          memberId: member.id,
-          bookId: book.id,
+          memberId: memberId,
+          bookId: bookId,
           returnedAt: IsNull(),
         },
       });
@@ -93,12 +78,12 @@ export class BorrowedBooksService {
     }
   }
 
-  async isBookBorrowed(book: Book): Promise<boolean> {
+  async isBookBorrowed(bookId: string): Promise<boolean> {
     try {
       const borrowedBook: BorrowedBook =
         await this.borrowedBooksRepository.findOne({
           where: {
-            bookId: book.id,
+            bookId: bookId,
             returnedAt: IsNull(),
           },
         });
@@ -111,12 +96,12 @@ export class BorrowedBooksService {
     }
   }
 
-  async isLimitBookBorrowed(member: Member): Promise<boolean> {
+  async isLimitBookBorrowed(memberId: string): Promise<boolean> {
     try {
       const memberBorrowedBook: BorrowedBook[] =
         await this.borrowedBooksRepository.find({
           where: {
-            memberId: member.id,
+            memberId: memberId,
             returnedAt: IsNull(),
           },
         });
