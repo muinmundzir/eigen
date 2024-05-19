@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 
 import { Member } from './member.entity';
+import { CreateMember } from './dto/create-member.dto';
 
 @Injectable()
 export class MemberService {
@@ -15,6 +16,20 @@ export class MemberService {
       return await this.membersRepository.find({
         relations: ['borrowedBooks'],
       });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async createMember(inputDto: CreateMember): Promise<Member> {
+    try {
+      const { code, name } = inputDto;
+
+      const member = new Member();
+      member.code = code;
+      member.name = name;
+
+      return await this.membersRepository.save(member);
     } catch (error) {
       throw error;
     }

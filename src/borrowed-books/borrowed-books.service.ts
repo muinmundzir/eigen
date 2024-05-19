@@ -61,7 +61,7 @@ export class BorrowedBooksService {
       data.memberId = member.id;
       data.bookId = book.id;
 
-      return this.borrowedBooksRepository.save(data);
+      return await this.borrowedBooksRepository.save(data);
     } catch (error) {
       throw error;
     }
