@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { IsNull, Repository } from 'typeorm';
 
 import { Book } from './book.entity';
 
@@ -12,7 +12,27 @@ export class BookService {
 
   async getAllBooks(): Promise<Book[]> {
     try {
-      return await this.booksRepository.find();
+      const result = await this.booksRepository.find({
+        relations: ['borrowedBooks'],
+        where: {
+          borrowedBooks: {
+            returnedAt: IsNull(),
+          },
+        },
+      });
+
+      // Count book stock
+      result.map((data) => {
+        const borrowedCount = data.borrowedBooks.length;
+        data.stock = +data.stock - borrowedCount;
+
+        delete data.borrowedBooks;
+
+        return data;
+      });
+
+      // Return filtered book
+      return result.filter((data) => data.stock != 0);
     } catch (error) {
       throw error;
     }

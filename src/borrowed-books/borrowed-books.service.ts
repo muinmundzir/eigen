@@ -9,8 +9,6 @@ import { IsNull, Repository } from 'typeorm';
 
 import { BorrowedBook } from './borrowed-books.entity';
 import { CreateBorrow } from './dto/create-borrow.dto';
-import { Book } from '@app/book/book.entity';
-import { Member } from '@app/member/member.entity';
 import { UpdateBorrow } from './dto/update-borrow.dto';
 
 @Injectable()
