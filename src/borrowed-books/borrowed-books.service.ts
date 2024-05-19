@@ -1,7 +1,6 @@
 import {
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -103,8 +102,6 @@ export class BorrowedBooksService {
             returnedAt: IsNull(),
           },
         });
-
-      Logger.log(memberBorrowedBook);
 
       if (memberBorrowedBook.length == 2) return true;
 
