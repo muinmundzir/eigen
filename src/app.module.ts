@@ -5,6 +5,7 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MemberModule } from './member/member.module';
+import { BookModule } from './book/book.module';
 import typeorm from './config/typeorm';
 
 @Module({
@@ -19,6 +20,7 @@ import typeorm from './config/typeorm';
       useFactory: async (configService: ConfigService) =>
         await configService.get('typeorm'),
     }),
+    BookModule,
   ],
   controllers: [AppController],
   providers: [AppService],
