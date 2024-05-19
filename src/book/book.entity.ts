@@ -1,4 +1,5 @@
-import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
+import { BorrowedBook } from '@app/borrowed-books/borrowed-books.entity';
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from 'typeorm';
 
 @Entity({ name: 'books' })
 export class Book {
@@ -31,4 +32,7 @@ export class Book {
     onUpdate: 'CURRENT_TIMESTAMP',
   })
   updatedAt: Date;
+
+  @OneToMany(() => BorrowedBook, (borrowedBook) => borrowedBook.book)
+  borrowedBooks: BorrowedBook[];
 }
