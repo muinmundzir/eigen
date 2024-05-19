@@ -109,13 +109,14 @@ export class BorrowedBooksService {
     try {
       const borrowedBook: BorrowedBook =
         await this.borrowedBooksRepository.findOne({
+          relations: ['book'],
           where: {
             bookId: bookId,
             returnedAt: IsNull(),
           },
         });
 
-      if (borrowedBook) return true;
+      if (borrowedBook && borrowedBook.book.stock == 1) return true;
 
       return false;
     } catch (error) {
