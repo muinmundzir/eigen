@@ -1,6 +1,7 @@
 import {
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -85,7 +86,7 @@ export class BorrowedBooksService {
       if (!borrowedBook)
         throw new NotFoundException('Borrowed book data not found.');
 
-      if (this.isPenalizeable(borrowedBook))
+      if (await this.isPenalizeable(borrowedBook))
         await this.membersService.penalizeMember(memberId);
 
       borrowedBook.returnedAt = new Date();
@@ -133,6 +134,7 @@ export class BorrowedBooksService {
     // Convert difference to days
     const differenceInDays = differenceInMilliseconds / (1000 * 60 * 60 * 24);
 
+    Logger.log('beda hari:', differenceInDays > 7);
     return differenceInDays > 7;
   }
 
