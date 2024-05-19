@@ -10,6 +10,9 @@ import { MemberService } from '@app/member/member.service';
 import { BorrowedBook } from './borrowed-books.entity';
 import { CreateBorrow } from './dto/create-borrow.dto';
 import { UpdateBorrow } from './dto/update-borrow.dto';
+import { Member } from '@app/member/member.entity';
+import { BookService } from '@app/book/book.service';
+import { Book } from '@app/book/book.entity';
 
 @Injectable()
 export class BorrowedBooksService {
@@ -17,12 +20,16 @@ export class BorrowedBooksService {
     @InjectRepository(BorrowedBook)
     private borrowedBooksRepository: Repository<BorrowedBook>,
     private membersService: MemberService,
+    private booksService: BookService,
   ) {}
 
   async getAllBorrowedBooks(): Promise<BorrowedBook[]> {
     try {
       return await this.borrowedBooksRepository.find({
         relations: ['member', 'book'],
+        where: {
+          returnedAt: IsNull(),
+        },
       });
     } catch (error) {
       throw error;
@@ -33,19 +40,25 @@ export class BorrowedBooksService {
     try {
       const { memberId, bookId } = inputDto;
 
-      // check if member already borrowed two books
+      const member = await this.findMemberOrFail(memberId);
+
+      const book = await this.findBookOrFail(bookId);
+
+      if (this.isMemberPenalized(member))
+        throw new ForbiddenException('Member is penalized for three days.');
+
       if (await this.isLimitBookBorrowed(memberId))
         throw new ForbiddenException('Borrowed books is limited to two books');
 
-      // check if book is already borrowed
-      if (await this.isBookBorrowed(bookId))
+      const validate = await this.isBookBorrowed(bookId);
+      if (validate.status)
         throw new ForbiddenException(
           'Book is already borrowed by other member',
         );
 
       const data = new BorrowedBook();
-      data.memberId = memberId;
-      data.bookId = bookId;
+      data.memberId = member.id;
+      data.bookId = book.id;
 
       return this.borrowedBooksRepository.save(data);
     } catch (error) {
@@ -57,11 +70,14 @@ export class BorrowedBooksService {
     try {
       const { memberId, bookId } = inputDto;
 
-      // check if book is borrowed and not yet returned
+      const member = await this.findMemberOrFail(memberId);
+
+      const book = await this.findBookOrFail(bookId);
+
       const borrowedBook = await this.borrowedBooksRepository.findOne({
         where: {
-          memberId: memberId,
-          bookId: bookId,
+          memberId: member.id,
+          bookId: book.id,
           returnedAt: IsNull(),
         },
       });
@@ -69,7 +85,6 @@ export class BorrowedBooksService {
       if (!borrowedBook)
         throw new NotFoundException('Borrowed book data not found.');
 
-      // Check if user will be penalized
       if (this.isPenalizeable(borrowedBook))
         await this.membersService.penalizeMember(memberId);
 
@@ -79,6 +94,22 @@ export class BorrowedBooksService {
     } catch (error) {
       throw error;
     }
+  }
+
+  private async findMemberOrFail(memberId: string): Promise<Member> {
+    const member = await this.membersService.findMember(memberId);
+
+    if (!member) throw new NotFoundException('Member not found.');
+
+    return member;
+  }
+
+  private async findBookOrFail(bookId: string): Promise<Book> {
+    const book = await this.booksService.findBook(bookId);
+
+    if (!book) throw new NotFoundException('Book not found.');
+
+    return book;
   }
 
   async isPenalizeable(borrowedBook: BorrowedBook): Promise<boolean> {
@@ -105,7 +136,9 @@ export class BorrowedBooksService {
     return differenceInDays > 7;
   }
 
-  async isBookBorrowed(bookId: string): Promise<boolean> {
+  async isBookBorrowed(
+    bookId: string,
+  ): Promise<{ status: boolean; data?: BorrowedBook }> {
     try {
       const borrowedBook: BorrowedBook =
         await this.borrowedBooksRepository.findOne({
@@ -116,9 +149,9 @@ export class BorrowedBooksService {
           },
         });
 
-      if (borrowedBook && borrowedBook.book.stock == 1) return true;
+      if (borrowedBook && borrowedBook.book.stock == 1) return { status: true };
 
-      return false;
+      return { status: false, data: borrowedBook };
     } catch (error) {
       throw error;
     }
@@ -140,5 +173,25 @@ export class BorrowedBooksService {
     } catch (error) {
       throw error;
     }
+  }
+
+  isMemberPenalized(member: Member) {
+    if (this.isPassThreeDaysAfterPenalized(member.penalizedAt)) return false;
+
+    return true;
+  }
+
+  isPassThreeDaysAfterPenalized(timestamp: Date) {
+    const currentDate = new Date();
+    const timestampDate = new Date(timestamp);
+
+    // Calculate the difference in milliseconds
+    const differenceInMilliseconds =
+      currentDate.getTime() - timestampDate.getTime();
+
+    // Convert difference to days
+    const differenceInDays = differenceInMilliseconds / (1000 * 60 * 60 * 24);
+
+    return differenceInDays > 3;
   }
 }
