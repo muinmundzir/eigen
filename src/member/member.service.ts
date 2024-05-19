@@ -31,4 +31,20 @@ export class MemberService {
       throw error;
     }
   }
+
+  async penalizeMember(id: string): Promise<Member> {
+    try {
+      const member = await this.membersRepository.findOne({
+        where: {
+          id,
+        },
+      });
+
+      member.penalizedAt = new Date();
+
+      return await this.membersRepository.save(member);
+    } catch (error) {
+      throw error;
+    }
+  }
 }

@@ -27,6 +27,12 @@ export class Member {
   })
   updatedAt: Date;
 
+  @Column({
+    name: 'penalized_at',
+    type: 'timestamp',
+  })
+  penalizedAt: Date;
+
   @OneToMany(() => BorrowedBook, (borrowedBook) => borrowedBook.member)
   borrowedBooks: BorrowedBook[];
 }

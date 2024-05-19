@@ -6,6 +6,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 
+import { MemberService } from '@app/member/member.service';
 import { BorrowedBook } from './borrowed-books.entity';
 import { CreateBorrow } from './dto/create-borrow.dto';
 import { UpdateBorrow } from './dto/update-borrow.dto';
@@ -15,6 +16,7 @@ export class BorrowedBooksService {
   constructor(
     @InjectRepository(BorrowedBook)
     private borrowedBooksRepository: Repository<BorrowedBook>,
+    private membersService: MemberService,
   ) {}
 
   async getAllBorrowedBooks(): Promise<BorrowedBook[]> {
@@ -67,12 +69,40 @@ export class BorrowedBooksService {
       if (!borrowedBook)
         throw new NotFoundException('Borrowed book data not found.');
 
+      // Check if user will be penalized
+      if (this.isPenalizeable(borrowedBook))
+        await this.membersService.penalizeMember(memberId);
+
       borrowedBook.returnedAt = new Date();
 
       return await this.borrowedBooksRepository.save(borrowedBook);
     } catch (error) {
       throw error;
     }
+  }
+
+  async isPenalizeable(borrowedBook: BorrowedBook): Promise<boolean> {
+    try {
+      if (this.isSevenDaysAfter(borrowedBook.createdAt)) return true;
+
+      return false;
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  isSevenDaysAfter(timestamp: Date) {
+    const currentDate = new Date();
+    const timestampDate = new Date(timestamp);
+
+    // Calculate the difference in milliseconds
+    const differenceInMilliseconds =
+      currentDate.getTime() - timestampDate.getTime();
+
+    // Convert difference to days
+    const differenceInDays = differenceInMilliseconds / (1000 * 60 * 60 * 24);
+
+    return differenceInDays > 7;
   }
 
   async isBookBorrowed(bookId: string): Promise<boolean> {
