@@ -11,6 +11,24 @@ export class MemberService {
   ) {}
 
   async getAllMembers(): Promise<Member[]> {
-    return await this.membersRepository.find();
+    try {
+      return await this.membersRepository.find({
+        relations: ['borrowedBooks'],
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findMember(id: string): Promise<Member> {
+    try {
+      return await this.membersRepository.findOne({
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 }
