@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { IsNull, Repository } from 'typeorm';
 
 import { Book } from './book.entity';
+import { AddBook } from './dto/add-book.dto';
 
 @Injectable()
 export class BookService {
@@ -33,6 +34,22 @@ export class BookService {
 
       // Return filtered book
       return result.filter((data) => data.stock != 0);
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async addBook(inputDto: AddBook): Promise<Book> {
+    try {
+      const { code, title, author, stock } = inputDto;
+
+      const book = new Book();
+      book.code = code;
+      book.title = title;
+      book.author = author;
+      book.stock = stock;
+
+      return await this.booksRepository.save(book);
     } catch (error) {
       throw error;
     }
