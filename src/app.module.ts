@@ -6,6 +6,7 @@ import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { MemberModule } from './member/member.module';
 import { BookModule } from './book/book.module';
+import { BorrowedBooksModule } from './borrowed-books/borrowed-books.module';
 import typeorm from './config/typeorm';
 
 @Module({
@@ -21,6 +22,7 @@ import typeorm from './config/typeorm';
         await configService.get('typeorm'),
     }),
     BookModule,
+    BorrowedBooksModule,
   ],
   controllers: [AppController],
   providers: [AppService],
