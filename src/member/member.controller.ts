@@ -1,4 +1,13 @@
-import { Controller } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 
-@Controller('member')
-export class MemberController {}
+import { MemberService } from './member.service';
+
+@Controller('/members')
+export class MemberController {
+  constructor(private memberService: MemberService) {}
+
+  @Get('/')
+  getMembers() {
+    return this.memberService.getAllMembers();
+  }
+}
