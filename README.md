@@ -32,6 +32,8 @@
 $ yarn install
 ```
 
+## Setup database
+
 ## Run migrations
 ```bash
 $ yarn typeorm:migrate
