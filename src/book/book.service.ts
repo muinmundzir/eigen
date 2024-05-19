@@ -11,6 +11,22 @@ export class BookService {
   ) {}
 
   async getAllBooks(): Promise<Book[]> {
-    return await this.booksRepository.find();
+    try {
+      return await this.booksRepository.find();
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async findBook(id: string): Promise<Book> {
+    try {
+      return await this.booksRepository.findOne({
+        where: {
+          id,
+        },
+      });
+    } catch (error) {
+      throw error;
+    }
   }
 }
